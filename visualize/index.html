@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Visualize quasirandom numbers</title>
+    </head>
+    <body>
+        <div id="app"></div>
+        <style>
+        body { 
+            font-family: sans-serif; 
+        }
+        .1d svg {
+            height: 12.5vh;
+            max-width: 100vw;
+        }
+        .2d svg {
+            height: 200px;
+        }
+        </style>
+        <script src="elm.js"></script>
+        <script>
+            Elm.Visualize.init({
+                node: document.getElementById('app'),
+                flags: {seed: +new Date()},
+            });
+        </script>
+    </body>
+</html>
