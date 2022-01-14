@@ -17,3 +17,7 @@ points2DGen : Int -> Generator (List ( Float, Float ))
 points3DGen : Int -> Generator (List ( Float, Float, Float ))
 pointsGen : { dimensions : Int, count : Int } -> Generator (List (List Float))
 ```
+
+## TODO
+
+- [ ] Try a recurrence algorithm instead: `z[i+1] = fractionalPart (z[i] + a)`. Likely a fold of some kind. Should be more accurate for large `i`s.
