@@ -32,6 +32,7 @@ module Quasirandom exposing
 
 -}
 
+import List.Extra as List
 import Random exposing (Generator)
 
 
@@ -41,20 +42,22 @@ import Random exposing (Generator)
 
 points1D : Int -> List Float
 points1D count =
-    List.range 1 count
-        |> List.map nth1D
+    seq 0.5 phi1 count
 
 
 points2D : Int -> List ( Float, Float )
 points2D count =
-    List.range 1 count
-        |> List.map nth2D
+    List.map2 Tuple.pair
+        (seq 0.5 phi1 count)
+        (seq 0.5 phi2 count)
 
 
 points3D : Int -> List ( Float, Float, Float )
 points3D count =
-    List.range 1 count
-        |> List.map nth3D
+    List.map3 (\x y z -> ( x, y, z ))
+        (seq 0.5 phi1 count)
+        (seq 0.5 phi2 count)
+        (seq 0.5 phi3 count)
 
 
 {-| A generalized way to generate N points in D dimensions.
@@ -82,14 +85,9 @@ If you want a randomized sequence, use `pointsGen`.
 -}
 points : { dimensions : Int, count : Int } -> List (List Float)
 points { dimensions, count } =
-    let
-        phis : List Float
-        phis =
-            List.range 1 dimensions
-                |> List.map phi
-    in
-    List.range 1 count
-        |> List.map (\i -> List.map (\phi_ -> r1 0.5 phi_ i) phis)
+    List.range 1 dimensions
+        |> List.map (\dimension -> seq 0.5 (phi dimension) count)
+        |> List.transpose
 
 
 
@@ -99,11 +97,7 @@ points { dimensions, count } =
 points1DGen : Int -> Generator (List Float)
 points1DGen count =
     Random.float 0 1
-        |> Random.map
-            (\s0 ->
-                List.range 1 count
-                    |> List.map (r1 s0 phi1)
-            )
+        |> Random.map (\s0 -> seq s0 phi1 count)
 
 
 points2DGen : Int -> Generator (List ( Float, Float ))
@@ -111,13 +105,9 @@ points2DGen count =
     Random.float 0 1
         |> Random.map
             (\s0 ->
-                List.range 1 count
-                    |> List.map
-                        (\i ->
-                            ( r1 s0 phi1 i
-                            , r1 s0 phi2 i
-                            )
-                        )
+                List.map2 Tuple.pair
+                    (seq s0 phi1 count)
+                    (seq s0 phi2 count)
             )
 
 
@@ -126,14 +116,10 @@ points3DGen count =
     Random.float 0 1
         |> Random.map
             (\s0 ->
-                List.range 1 count
-                    |> List.map
-                        (\i ->
-                            ( r1 s0 phi1 i
-                            , r1 s0 phi2 i
-                            , r1 s0 phi3 i
-                            )
-                        )
+                List.map3 (\x y z -> ( x, y, z ))
+                    (seq s0 phi1 count)
+                    (seq s0 phi2 count)
+                    (seq s0 phi3 count)
             )
 
 
@@ -161,17 +147,12 @@ etc.
 -}
 pointsGen : { dimensions : Int, count : Int } -> Generator (List (List Float))
 pointsGen { dimensions, count } =
-    let
-        phis : List Float
-        phis =
-            List.range 1 dimensions
-                |> List.map phi
-    in
     Random.float 0 1
         |> Random.map
             (\s0 ->
-                List.range 1 count
-                    |> List.map (\i -> List.map (\phi_ -> r1 s0 phi_ i) phis)
+                List.range 1 dimensions
+                    |> List.map (\dimension -> seq s0 (phi dimension) count)
+                    |> List.transpose
             )
 
 
@@ -283,8 +264,8 @@ phi d_ =
 
 
 r1 : Float -> Float -> Int -> Float
-r1 s0 phi n =
-    fractionalPart (s0 + toFloat n * phi)
+r1 s0 phi_ n =
+    fractionalPart (s0 + toFloat n * phi_)
 
 
 fractionalPart : Float -> Float
@@ -301,8 +282,8 @@ doNTimes n fn value =
         doNTimes (n - 1) fn (fn value)
 
 
-seq : Int -> Float -> (Float -> Float) -> List Float
-seq s0 phi n =
+seq : Float -> Float -> Int -> List Float
+seq s0 phi_ n =
     let
         go : Int -> ( Float, List Float ) -> List Float
         go n_ ( last, acc ) =
@@ -311,10 +292,10 @@ seq s0 phi n =
 
             else
                 let
-                    next : Float
-                    next =
-                        fractionalPart (last + phi)
+                    next_ : Float
+                    next_ =
+                        fractionalPart (last + phi_)
                 in
-                go (n_ - 1) ( next, next :: acc )
+                go (n_ - 1) ( next_, next_ :: acc )
     in
     go n ( s0, [] )
