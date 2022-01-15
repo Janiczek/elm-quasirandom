@@ -1,6 +1,8 @@
 module Quasirandom exposing
     ( points1D, points2D, points3D, points
     , points1DGen, points2DGen, points3DGen, pointsGen
+    , next1D, next2D, next3D, next, nextForDimension
+    , nth1D, nth2D, nth3D, nth, nthForDimension
     )
 
 {-| These quasirandom (low-discrepancy) sequences are based on the blogpost
@@ -18,6 +20,16 @@ module Quasirandom exposing
 
 @docs points1DGen, points2DGen, points3DGen, pointsGen
 
+
+# Stepping functions
+
+@docs next1D, next2D, next3D, next, nextForDimension
+
+
+# "Nth point" functions
+
+@docs nth1D, nth2D, nth3D, nth, nthForDimension
+
 -}
 
 import Random exposing (Generator)
@@ -30,30 +42,19 @@ import Random exposing (Generator)
 points1D : Int -> List Float
 points1D count =
     List.range 1 count
-        |> List.map (r1 0.5 phi1)
+        |> List.map nth1D
 
 
 points2D : Int -> List ( Float, Float )
 points2D count =
     List.range 1 count
-        |> List.map
-            (\i ->
-                ( r1 0.5 phi1 i
-                , r1 0.5 phi2 i
-                )
-            )
+        |> List.map nth2D
 
 
 points3D : Int -> List ( Float, Float, Float )
 points3D count =
     List.range 1 count
-        |> List.map
-            (\i ->
-                ( r1 0.5 phi1 i
-                , r1 0.5 phi2 i
-                , r1 0.5 phi3 i
-                )
-            )
+        |> List.map nth3D
 
 
 {-| A generalized way to generate N points in D dimensions.
@@ -175,6 +176,75 @@ pointsGen { dimensions, count } =
 
 
 
+-- Stepping functions
+
+
+next1D : Float -> Float
+next1D x =
+    fractionalPart (x + phi1)
+
+
+next2D : ( Float, Float ) -> ( Float, Float )
+next2D ( x, y ) =
+    ( fractionalPart (x + phi1)
+    , fractionalPart (y + phi2)
+    )
+
+
+next3D : ( Float, Float, Float ) -> ( Float, Float, Float )
+next3D ( x, y, z ) =
+    ( fractionalPart (x + phi1)
+    , fractionalPart (y + phi2)
+    , fractionalPart (z + phi3)
+    )
+
+
+next : List Float -> List Float
+next point =
+    List.indexedMap nextForDimension point
+
+
+nextForDimension : Int -> Float -> Float
+nextForDimension d component =
+    fractionalPart (component + phi d)
+
+
+
+-- "Nth point" functions
+
+
+nth1D : Int -> Float
+nth1D n =
+    r1 0.5 phi1 n
+
+
+nth2D : Int -> ( Float, Float )
+nth2D n =
+    ( r1 0.5 phi1 n
+    , r1 0.5 phi2 n
+    )
+
+
+nth3D : Int -> ( Float, Float, Float )
+nth3D n =
+    ( r1 0.5 phi1 n
+    , r1 0.5 phi2 n
+    , r1 0.5 phi3 n
+    )
+
+
+nth : { dimensions : Int, n : Int } -> List Float
+nth { dimensions, n } =
+    List.range 1 dimensions
+        |> List.map (\d -> r1 0.5 (phi d) n)
+
+
+nthForDimension : { dimension : Int, n : Int } -> Float
+nthForDimension { dimension, n } =
+    r1 0.5 (phi dimension) n
+
+
+
 -- Generalized golden numbers
 
 
@@ -213,8 +283,8 @@ phi d_ =
 
 
 r1 : Float -> Float -> Int -> Float
-r1 s0 a n =
-    fractionalPart (s0 + toFloat n * a)
+r1 s0 phi n =
+    fractionalPart (s0 + toFloat n * phi)
 
 
 fractionalPart : Float -> Float
@@ -229,3 +299,22 @@ doNTimes n fn value =
 
     else
         doNTimes (n - 1) fn (fn value)
+
+
+seq : Int -> Float -> (Float -> Float) -> List Float
+seq s0 phi n =
+    let
+        go : Int -> ( Float, List Float ) -> List Float
+        go n_ ( last, acc ) =
+            if n_ <= 0 then
+                List.reverse acc
+
+            else
+                let
+                    next : Float
+                    next =
+                        fractionalPart (last + phi)
+                in
+                go (n_ - 1) ( next, next :: acc )
+    in
+    go n ( s0, [] )
