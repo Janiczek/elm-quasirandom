@@ -40,11 +40,15 @@ import Random exposing (Generator)
 -- Low-discrepancy sequences
 
 
+{-| Generate a low-discrepancy sequence of N points in the `[0,1)` interval.
+-}
 points1D : Int -> List Float
 points1D count =
     seq 0.5 phi1 count
 
 
+{-| Generate a low-discrepancy sequence of N points in the `[0,1)^2` space.
+-}
 points2D : Int -> List ( Float, Float )
 points2D count =
     List.map2 Tuple.pair
@@ -52,6 +56,8 @@ points2D count =
         (seq 0.5 phi2 count)
 
 
+{-| Generate a low-discrepancy sequence of N points in the `[0,1)^3` space.
+-}
 points3D : Int -> List ( Float, Float, Float )
 points3D count =
     List.map3 (\x y z -> ( x, y, z ))
@@ -60,7 +66,8 @@ points3D count =
         (seq 0.5 phi3 count)
 
 
-{-| A generalized way to generate N points in D dimensions.
+{-| A generalized way to generate N points in D dimensions (each dimension
+confined to the `[0,1)` interval).
 
 The returned data is in shape:
 
@@ -94,12 +101,18 @@ points { dimensions, count } =
 -- Randomized low-discrepancy sequences
 
 
+{-| Generate a randomized low-discrepancy sequence of N points in the `[0,1)`
+interval.
+-}
 points1DGen : Int -> Generator (List Float)
 points1DGen count =
     Random.float 0 1
         |> Random.map (\s0 -> seq s0 phi1 count)
 
 
+{-| Generate a randomized low-discrepancy sequence of N points in the `[0,1)^2`
+space.
+-}
 points2DGen : Int -> Generator (List ( Float, Float ))
 points2DGen count =
     Random.float 0 1
@@ -111,6 +124,9 @@ points2DGen count =
             )
 
 
+{-| Generate a randomized low-discrepancy sequence of N points in the `[0,1)^3`
+space.
+-}
 points3DGen : Int -> Generator (List ( Float, Float, Float ))
 points3DGen count =
     Random.float 0 1
@@ -123,7 +139,8 @@ points3DGen count =
             )
 
 
-{-| A randomized generalized way to generate N points in D dimensions.
+{-| A randomized generalized way to generate N points in D dimensions (each
+dimension confined to the `[0,1)` interval).
 
 The returned data is in shape:
 
@@ -160,11 +177,26 @@ pointsGen { dimensions, count } =
 -- Stepping functions
 
 
+{-| Given a point in the `[0,1)` interval, generate another one in the
+low-discrepancy sequence.
+
+Given enough of these, they will cover the interval uniformly.
+
+Note that if you need to generate these numbers on multiple axes, you should
+instead use `nextForDimension` and give each axis a different `dimension` value.
+
+-}
 next1D : Float -> Float
 next1D x =
     fractionalPart (x + phi1)
 
 
+{-| Given a point in the `[0,1)^2` space, generate another one in the
+low-discrepancy sequence.
+
+Given enough of these, they will cover the space uniformly.
+
+-}
 next2D : ( Float, Float ) -> ( Float, Float )
 next2D ( x, y ) =
     ( fractionalPart (x + phi1)
@@ -172,6 +204,12 @@ next2D ( x, y ) =
     )
 
 
+{-| Given a point in the `[0,1)^3` space, generate another one in the
+low-discrepancy sequence.
+
+Given enough of these, they will cover the space uniformly.
+
+-}
 next3D : ( Float, Float, Float ) -> ( Float, Float, Float )
 next3D ( x, y, z ) =
     ( fractionalPart (x + phi1)
@@ -180,11 +218,26 @@ next3D ( x, y, z ) =
     )
 
 
+{-| Given a N-dimensional point, generate another one in the low-discrepancy
+sequence.
+
+Given enough of these, they will cover the space uniformly.
+
+-}
 next : List Float -> List Float
 next point =
     List.indexedMap nextForDimension point
 
 
+{-| Given a point component for a given dimension, generate another one in the
+low-discrepancy sequence.
+
+Given enough of these, they will cover the space uniformly.
+
+Note that if `d1 /= d2` then `nextForDimension d1 x /= nextForDimension d2 x`.
+This is a good thing!
+
+-}
 nextForDimension : Int -> Float -> Float
 nextForDimension d component =
     fractionalPart (component + phi d)
@@ -194,11 +247,29 @@ nextForDimension d component =
 -- "Nth point" functions
 
 
+{-| Generate n-th point in the 1D low-discrepancy sequence.
+
+Note that for speed with large `n`s, this uses a multiplicative algorithm
+instead of an additive one that's used by `points*` and `next*`, resulting in a
+slight loss of precision, and so the sequences generated using `nth*` will
+eventually diverge from the sequences generated using the rest of the functions
+in this module.
+
+-}
 nth1D : Int -> Float
 nth1D n =
     r1 0.5 phi1 n
 
 
+{-| Generate n-th point in the 2D low-discrepancy sequence.
+
+Note that for speed with large `n`s, this uses a multiplicative algorithm
+instead of an additive one that's used by `points*` and `next*`, resulting in a
+slight loss of precision, and so the sequences generated using `nth*` will
+eventually diverge from the sequences generated using the rest of the functions
+in this module.
+
+-}
 nth2D : Int -> ( Float, Float )
 nth2D n =
     ( r1 0.5 phi1 n
@@ -206,6 +277,15 @@ nth2D n =
     )
 
 
+{-| Generate n-th point in the 3D low-discrepancy sequence.
+
+Note that for speed with large `n`s, this uses a multiplicative algorithm
+instead of an additive one that's used by `points*` and `next*`, resulting in a
+slight loss of precision, and so the sequences generated using `nth*` will
+eventually diverge from the sequences generated using the rest of the functions
+in this module.
+
+-}
 nth3D : Int -> ( Float, Float, Float )
 nth3D n =
     ( r1 0.5 phi1 n
@@ -214,12 +294,31 @@ nth3D n =
     )
 
 
+{-| Generate n-th point in the N-dimensional low-discrepancy sequence.
+
+Note that for speed with large `n`s, this uses a multiplicative algorithm
+instead of an additive one that's used by `points*` and `next*`, resulting in a
+slight loss of precision, and so the sequences generated using `nth*` will
+eventually diverge from the sequences generated using the rest of the functions
+in this module.
+
+-}
 nth : { dimensions : Int, n : Int } -> List Float
 nth { dimensions, n } =
     List.range 1 dimensions
         |> List.map (\d -> r1 0.5 (phi d) n)
 
 
+{-| Generate n-th point's component for the n-th dimension in the
+low-discrepancy sequence.
+
+Note that for speed with large `n`s, this uses a multiplicative algorithm
+instead of an additive one that's used by `points*` and `next*`, resulting in a
+slight loss of precision, and so the sequences generated using `nth*` will
+eventually diverge from the sequences generated using the rest of the functions
+in this module.
+
+-}
 nthForDimension : { dimension : Int, n : Int } -> Float
 nthForDimension { dimension, n } =
     r1 0.5 (phi dimension) n
