@@ -170,10 +170,10 @@ view model =
             [ Html.text "Generate new numbers" ]
         , model.sequences1D
             |> List.map viewSequence1D
-            |> Html.div [ Attrs.class "1d" ]
+            |> Html.div [ Attrs.class "sequence-1d" ]
         , model.sequences2D
             |> List.map viewSequence2D
-            |> Html.div [ Attrs.class "2d" ]
+            |> Html.div [ Attrs.class "sequence-2d" ]
         ]
 
 
@@ -239,7 +239,7 @@ viewSequence2D ( label, points ) =
                 ]
             , C.series Tuple.first
                 [ C.scatter Tuple.second
-                    [ CA.opacity 0.2
+                    [ CA.opacity 0.3
                     , CA.borderWidth 0
                     , CA.size 2
                     ]
