@@ -2,9 +2,9 @@
 
 Functions for generating [quasirandom (low-discrepancy) numbers](https://en.wikipedia.org/wiki/Low-discrepancy_sequence), roughly speaking a random sequence that fills the N-dimensional space with as little gaps between points as possible (given enough points).
 
-<img src="https://raw.github.com/Janiczek/elm-quasirandom/master/1d.png" alt="1D sequences">
+[![1D sequences](https://github.com/Janiczek/elm-quasirandom/raw/master/1d.png)](https://github.com/Janiczek/elm-quasirandom/raw/master/1d.png)
 
-<img src="https://raw.github.com/Janiczek/elm-quasirandom/master/2d.png" alt="2D sequences">
+[![2D sequences](https://github.com/Janiczek/elm-quasirandom/raw/master/2d.png)](https://github.com/Janiczek/elm-quasirandom/raw/master/2d.png)
 
 Inspired by [@gampleman's post](https://gist.github.com/gampleman/b46f9b60c25e00a31d2416a4cb113672) on improving elm-test and the [paper on quasi-random testing](https://www.researchgate.net/publication/3152943_Quasi-Random_Testing).
 
