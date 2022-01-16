@@ -6,10 +6,13 @@ import Chart.Attributes as CA
 import Html exposing (Html)
 import Html.Attributes as Attrs
 import Html.Events as Events
+import Html.Lazy
 import List.Cartesian
 import Quasirandom
 import Random exposing (Generator)
 import Random.Extra as Random
+import Svg
+import Svg.Attributes as SvgAttrs
 
 
 type alias Flags =
@@ -18,6 +21,7 @@ type alias Flags =
 
 type alias Model =
     { seed : Random.Seed
+    , points : Int
     , sequences1D : List ( String, List Float )
     , sequences2D : List ( String, List ( Float, Float ) )
     }
@@ -25,6 +29,7 @@ type alias Model =
 
 type Msg
     = GenerateNewNumbers
+    | SetPointsCount String
 
 
 seqLength1D : Int
@@ -34,7 +39,12 @@ seqLength1D =
 
 seqLength2D : Int
 seqLength2D =
-    1000
+    1975
+
+
+deterministicPoints : List ( Float, Float )
+deterministicPoints =
+    Quasirandom.points2D (2 * seqLength2D)
 
 
 seqLength1D_ : Float
@@ -90,9 +100,9 @@ prng2DGen =
 
 sequences1DGen : Generator (List ( String, List Float ))
 sequences1DGen =
-    [ ( "Lattice", ideal1DGen )
+    [ ( "Linear interpolation", ideal1DGen )
     , ( "Random.float 0 1", prng1DGen )
-    , ( "R1 with a = golden ratio", Quasirandom.points1DGen seqLength1D )
+    , ( "Quasirandom", Quasirandom.points1DGen seqLength1D )
     ]
         |> List.map (\( label, gen ) -> Random.map (Tuple.pair label) gen)
         |> Random.sequence
@@ -101,8 +111,8 @@ sequences1DGen =
 sequences2DGen : Generator (List ( String, List ( Float, Float ) ))
 sequences2DGen =
     [ ( "Lattice", ideal2DGen )
-    , ( "Random.float 0 1", prng2DGen )
-    , ( "R2 with a = golden ratio", Quasirandom.points2DGen seqLength2D )
+    , ( "(Random.float 0 1)^2", prng2DGen )
+    , ( "Quasirandom", Quasirandom.points2DGen seqLength2D )
     ]
         |> List.map (\( label, gen ) -> Random.map (Tuple.pair label) gen)
         |> Random.sequence
@@ -133,6 +143,7 @@ init { seed } =
             Random.step sequencesGen initialSeed
     in
     ( { seed = newSeed
+      , points = 335
       , sequences1D = sequences1D
       , sequences2D = sequences2D
       }
@@ -156,6 +167,14 @@ update msg model =
             , Cmd.none
             )
 
+        SetPointsCount countString ->
+            case String.toInt countString of
+                Just count ->
+                    ( { model | points = count }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -169,11 +188,39 @@ view model =
             [ Events.onClick GenerateNewNumbers ]
             [ Html.text "Generate new numbers" ]
         , model.sequences1D
-            |> List.map viewSequence1D
-            |> Html.div [ Attrs.class "sequence-1d" ]
+            |> Html.Lazy.lazy
+                (\sequence ->
+                    sequence
+                        |> List.map viewSequence1D
+                        |> Html.div [ Attrs.class "sequence-1d" ]
+                )
         , model.sequences2D
-            |> List.map viewSequence2D
-            |> Html.div [ Attrs.class "sequence-2d" ]
+            |> Html.Lazy.lazy
+                (\sequence ->
+                    sequence
+                        |> List.map viewSequence2D
+                        |> Html.div [ Attrs.class "sequence-2d" ]
+                )
+        , model.points
+            |> Html.Lazy.lazy
+                (\points ->
+                    Html.div [ Attrs.class "deterministic" ]
+                        [ Html.div []
+                            [ Html.input
+                                [ Attrs.value (String.fromInt points)
+                                , Attrs.type_ "range"
+                                , Attrs.min "0"
+                                , Attrs.max (String.fromInt (2 * seqLength2D))
+                                , Events.onInput SetPointsCount
+                                ]
+                                []
+                            ]
+                        , ( "Deterministic (points: " ++ String.fromInt points ++ ")"
+                          , List.take points deterministicPoints
+                          )
+                            |> viewSequence2D
+                        ]
+                )
         ]
 
 
@@ -182,30 +229,26 @@ view model =
 viewSequence1D : ( String, List Float ) -> Html Msg
 viewSequence1D ( label, numbers ) =
     Html.div [ Attrs.class "chart" ]
-        [ Html.text <| label ++ " (star discrepancy: " ++ String.fromFloat (starDiscrepancy1D numbers) ++ ")"
-        , C.chart
-            [ CA.height 50
-            , CA.width 300
-            , CA.margin { top = 10, bottom = 20, left = 20, right = 20 }
-            , CA.padding { top = 10, bottom = 10, left = 10, right = 10 }
-            , CA.range
-                [ CA.lowest 0 CA.orLower
-                , CA.highest 1 CA.orHigher
-                ]
-            ]
-            [ C.xLabels
-                [ CA.withGrid
-                , CA.amount 2
-                ]
-            , C.series identity
-                [ C.scatter (\_ -> 0)
-                    [ CA.opacity 0.2
-                    , CA.borderWidth 0
-                    , CA.size 2
-                    ]
-                ]
-                numbers
-            ]
+        [ Html.div [] [ Html.text <| label ++ " (star discrepancy: " ++ String.fromFloat (starDiscrepancy1D numbers) ++ ")" ]
+        , Svg.svg [ SvgAttrs.viewBox "0 0 300 5" ]
+            (numbers
+                |> List.map
+                    (\x ->
+                        let
+                            lineX =
+                                String.fromFloat (x * 300)
+                        in
+                        Svg.line
+                            [ SvgAttrs.x1 lineX
+                            , SvgAttrs.x2 lineX
+                            , SvgAttrs.y1 "-2"
+                            , SvgAttrs.y2 "2"
+                            , SvgAttrs.stroke "#7b4dff"
+                            , SvgAttrs.opacity "0.3"
+                            ]
+                            []
+                    )
+            )
         ]
 
 
@@ -221,12 +264,12 @@ viewSequence2D ( label, points ) =
             , CA.margin { top = 10, bottom = 20, left = 20, right = 20 }
             , CA.padding { top = 10, bottom = 10, left = 10, right = 10 }
             , CA.range
-                [ CA.lowest 0 CA.orLower
-                , CA.highest 1 CA.orHigher
+                [ CA.lowest 0 CA.exactly
+                , CA.highest 1 CA.exactly
                 ]
             , CA.domain
-                [ CA.lowest 0 CA.orLower
-                , CA.highest 1 CA.orHigher
+                [ CA.lowest 0 CA.exactly
+                , CA.highest 1 CA.exactly
                 ]
             ]
             [ C.xLabels
