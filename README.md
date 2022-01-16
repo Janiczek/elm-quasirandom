@@ -34,3 +34,5 @@ nthForDimension : { dimension : Int, n : Int } -> Float
 
 [![2D sequences](https://github.com/Janiczek/elm-quasirandom/raw/master/2d.png)](https://github.com/Janiczek/elm-quasirandom/raw/master/2d.png)
 
+[![2D sequences](https://github.com/Janiczek/elm-quasirandom/raw/master/sequence.gif)](https://github.com/Janiczek/elm-quasirandom/raw/master/sequence.gif)
+
